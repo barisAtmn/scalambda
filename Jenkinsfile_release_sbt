@@ -3,7 +3,7 @@ pipeline {
     agent {
         docker {
             image 'hseeberger/scala-sbt:8u242_1.3.8_2.12.10'
-            args "-v $JENKINS_HOME/.sbt/.credentials:/mnt/JENKINS_HOME/.sbt/.credentials"          
+            args "-v $JENKINS_HOME/.sbt/.credentials:$JENKINS_HOME/.sbt/.credentials"          
             label 'GENERAL'
         }
     }
