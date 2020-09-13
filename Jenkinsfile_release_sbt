@@ -30,6 +30,7 @@ pipeline {
         GIT_EMAIL = 'jenkins@carpe.io'
         GIT_TOKEN = credentials('GITHUB_RELEASE_TOKEN')
         GIT_URL_WITH_TOKEN = "${GIT_URL}".replace('https://',"https://${GIT_TOKEN}@")
+        GITHUB_REPO_NAME = "${GIT_URL.tokenize('/')[-1].tokenize('.')[0]}"
  
         // RELEASE
         RELEASE_BRANCH = 'develop'
@@ -76,10 +77,10 @@ pipeline {
             RELEASE_VERSION = sh(script: 'git describe --abbrev=0', returnStdout: true)
             currentBuild.description = "Released Version : ${RELEASE_VERSION}"
           }
-          slackSend(channel: "${SLACK_CHANEL_TO_NOTIFY}", color: '#7CFC00',message:"*Project*: `${CI_JOB_NAME}` \n*Release*: ${RELEASE_VERSION} \n *Release Type*: ${RELEASE_TYPE}\n *Status*: ${currentBuild.currentResult} \n *JOB URL*: ${env.BUILD_URL}")
+          slackSend(channel: "${SLACK_CHANEL_TO_NOTIFY}", color: '#7CFC00',message:"*Project*: `${GITHUB_REPO_NAME}` \n*Release*: ${RELEASE_VERSION} \n *Release Type*: ${RELEASE_TYPE}\n *Status*: ${currentBuild.currentResult} \n *JOB URL*: ${env.BUILD_URL}")
        }
        failure {
-         slackSend(channel: "${SLACK_CHANEL_TO_NOTIFY}", color: '#FF4500',message:"*Project*: `${CI_JOB_NAME}` \n *Release Type*: ${RELEASE_TYPE}\n *Status*: ${currentBuild.currentResult} \n *JOB URL*: ${env.BUILD_URL} \n Notifying: ${PERSON_TO_NOTIFY}")
+         slackSend(channel: "${SLACK_CHANEL_TO_NOTIFY}", color: '#FF4500',message:"*Project*: `${GITHUB_REPO_NAME}` \n *Release Type*: ${RELEASE_TYPE}\n *Status*: ${currentBuild.currentResult} \n *JOB URL*: ${env.BUILD_URL} \n Notifying: ${PERSON_TO_NOTIFY}")
        }
        cleanup {
            cleanWs()
