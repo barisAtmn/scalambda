@@ -3,7 +3,7 @@ pipeline {
     agent {
         docker {
             image 'hseeberger/scala-sbt:8u242_1.3.8_2.12.10'
-            args "-v $JENKINS_HOME/.sbt/.credentials:/mnt/JENKINS_HOME/.sbt/.credentials"
+            args "-v $JENKINS_HOME/.sbt/.credentials:$JENKINS_HOME/.sbt/.credentials"
             label 'GENERAL'
         }
     }
@@ -17,7 +17,6 @@ pipeline {
     environment {
 	    //def CI_PROPERTIES = readProperties interpolate: true, file: '.ci/ci.properties'
         // PROJECT
-        PROJECT_NAME = "${JOB_NAME.split('/')[0]}"
         CURRENT_VERSION = readFile("${env.WORKSPACE}/version.sbt").split(":=")[1].replace("\"","").trim()
         ORGANIZATION = "carpe"
         DEFAULT_SCALA_VERSION = sh(script:"sbt -Dsbt.log.noformat=true $SBT_OPTIONS \"show scalaBinaryVersion\" | tail -1 | awk '{print \$(NF)}' | tr -d '\n'", returnStdout: true)
@@ -47,9 +46,10 @@ pipeline {
         SNAPSHOT_VERSION_TO_RELEASE = "${SHORT_GIT_COMMIT_SHA}-${CURRENT_VERSION}"
         // GITHUB
         GITHUB_TOKEN = credentials('GITHUB_RELEASE_TOKEN')
-        GITHUB_API_URL = "https://api.github.com/repos/${ORGANIZATION}/${PROJECT_NAME}" 
+        GITHUB_REPO_NAME = "${GIT_URL.tokenize('/')[-1].tokenize('.')[0]}"
+        GITHUB_API_URL = "https://api.github.com/repos/${ORGANIZATION}/${GITHUB_REPO_NAME}" 
         // SONARQUBE
-        SONARQUBE_OPTIONS="-Dsonar.organization=${ORGANIZATION} -Dsonar.projectKey=carpe_${PROJECT_NAME} -Dsonar.verbose=true"
+        SONARQUBE_OPTIONS="-Dsonar.organization=${ORGANIZATION} -Dsonar.projectKey=carpe_${GITHUB_REPO_NAME} -Dsonar.verbose=true"
         
     }
     stages {
@@ -124,10 +124,10 @@ pipeline {
             
         }
         success{
-          slackSend(channel: "${SLACK_CHANNEL_TO_NOTIFY}", color: '#7CFC00',message:"*Project*: `${CI_JOB_NAME}` \n*Branch*: ${env.BRANCH_NAME} \n *Commit*: ${env.GIT_COMMIT} \n *Status*: ${currentBuild.currentResult} \n *JOB URL*: ${env.BUILD_URL}")
+          slackSend(channel: "${SLACK_CHANNEL_TO_NOTIFY}", color: '#7CFC00',message:"*Project*: `${GITHUB_REPO_NAME}` \n*Branch*: ${env.BRANCH_NAME} \n *Commit*: ${env.GIT_COMMIT} \n *Status*: ${currentBuild.currentResult} \n *JOB URL*: ${env.BUILD_URL}")
         }
         failure{
-          slackSend(channel: "${SLACK_CHANNEL_TO_NOTIFY}", color: '#FF4500',message:"*Project*: `${CI_JOB_NAME}` \n*Branch*: ${env.BRANCH_NAME} \n *Commit*: ${env.GIT_COMMIT} \n *Status*: ${currentBuild.currentResult} \n *JOB URL*: ${env.BUILD_URL}")
+          slackSend(channel: "${SLACK_CHANNEL_TO_NOTIFY}", color: '#FF4500',message:"*Project*: `${GITHUB_REPO_NAME}` \n*Branch*: ${env.BRANCH_NAME} \n *Commit*: ${env.GIT_COMMIT} \n *Status*: ${currentBuild.currentResult} \n *JOB URL*: ${env.BUILD_URL}")
         } 
         cleanup{
           cleanWs()
